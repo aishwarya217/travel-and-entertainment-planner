@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html ng-app = "fe">
+<head>
+	<title></title>
+	<style type="text/css">
+		#photo_gallery {
+		    display: -ms-flexbox; /* IE 10 */
+		    display: flex;
+		    -ms-flex-wrap: wrap; /* IE 10 */
+		    flex-wrap: wrap;
+		    padding: 0 4px;
+		}
+
+/* Create two equal columns that sits next to each other */
+		.column {
+		    -ms-flex: 25%; /* IE 10 */
+		    flex: 25%;
+		    padding: 0 4px;
+		}
+
+		.column img {
+		    margin-top: 10px;
+		    vertical-align: middle;
+		    width: 100%;
+ 		}
+
+ 		.ng-enter {
+  			transition:0.5s linear all;
+  			opacity:0;
+		}
+
+		.ng-enter.ng-enter-active {
+ 		 	opacity:1;
+		}
+
+	</style>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+	<script type="text/javascript">
+		value_of_cur = 1;
+		here_json = "";
+
+		function get_geojson(data){
+			here_json = data;
+
+		}
+
+		function add_autocomplete(){
+			var input = document.getElementById('location');
+			var autocomplete = new google.maps.places.Autocomplete(input);
+		}
+
+		function onload_func_call(){
+			var submit_button = document.getElementById("search_btn");
+			if(here_json == ""){
+				if(submit_button){
+					submit_button.disabled="disabled";
+					var hidden_value = document.getElementsByName('lat_lng')[0];
+					hidden_value.value = (34.0093) + " " + (-118.2584) ;
+					//console.log("Hello"); 
+				}
+			}
+			else{
+					var hidden_value = document.getElementsByName('lat_lng')[0];
+					hidden_value.value = here_json["lat"]+ " " + here_json["lon"];
+			}
+
+			var fav_div = document.getElementById("favorites");
+			var favs_array = JSON.parse(window.localStorage.getItem("favs"));
+			console.log(favs_array);
+
+			if( favs_array == undefined || favs_array.length == 0){
+				var warning_div = document.createElement("div");
+				warning_div.style.marginTop = "35px";
+				var warning_text = "No records.";
+				var warning_text_node = document.createTextNode(warning_text);
+				warning_div.classList.add("alert");
+				warning_div.classList.add("alert-warning");
+				warning_div.setAttribute("role","alert");
+				warning_div.appendChild(warning_text_node);
+				fav_div.appendChild(warning_div);
+			}
+			else{
+				
+				var favs_table = document.createElement("table");
+				favs_table.classList.add("table");
+				favs_table.id = "fav_table";
+				var tbl_heading = ["#","Category","Name","Address","Favorite","Details"];
+				favs_table.style.marginLeft = "auto";
+				favs_table.style.marginRight = "auto";
+				favs_table.style.marginTop = "40px";
+				var thead = document.createElement("thead");
+				var head_row = document.createElement("tr");
+				
+				for(k in tbl_heading){
+					var th = document.createElement("th");
+					var text = document.createTextNode(tbl_heading[k]);
+					th.appendChild(text);	
+					head_row.appendChild(th);
+				}
+				thead.appendChild(head_row);
+				
+				favs_table.appendChild(thead);
+
+				for(f in favs_array){
+					
+					var fav_tr = document.createElement("tr");
+					var fav_td1 = document.createElement("td");
+					var fav_td2 = document.createElement("td");
+					var fav_td3 = document.createElement("td");
+					var fav_td4 = document.createElement("td");
+					var fav_td5 = document.createElement("td");
+					var fav_td6 = document.createElement("td");
+
+					var fav_td1_txt = document.createTextNode(favs_array[f]["payload"]["#"]);
+					console.log(fav_td1_txt);
+					fav_td1.appendChild(fav_td1_txt);
+
+					fav_td2.innerHTML = favs_array[f]["payload"]["category"];
+
+					fav_td3_txt = document.createTextNode(favs_array[f]["payload"]["name"]);
+					fav_td3.appendChild(fav_td3_txt);
+
+					fav_td4_txt = document.createTextNode(favs_array[f]["payload"]["address"]);
+					fav_td4.appendChild(fav_td4_txt);
+
+					fav_td5_ele = document.createElement("button");
+					fav_td5_ele.classList.add("btn");
+					fav_td5_ele.classList.add("border");
+					fav_td5_ele.innerHTML = "<i class= 'fa fa-trash'></i>";
+					fav_td5_ele.addEventListener('click',function(){
+						del_row_favs(this);
+						var place_id_clicked = this.parentElement.parentElement.childNodes[5].childNodes[0].name;
+						var button_of_row = document.getElementById(place_id_clicked);
+						button_of_row.parentElement.parentElement.childNodes[4].childNodes[0].innerHTML = "<i class='fa fa-star-o'></i>";
+					});
+
+					fav_td5.appendChild(fav_td5_ele);
+
+					fav_td6_ele = document.createElement("button");
+					fav_td6_ele.classList.add("btn");
+					fav_td6_ele.classList.add("border");
+					fav_td6_ele.innerHTML = "<i class='fa fa-chevron-right'></i>";
+					fav_td6_ele.name = favs_array[f]["place_id"];
+					fav_td6.appendChild(fav_td6_ele);
+
+					fav_tr.appendChild(fav_td1);
+					fav_tr.appendChild(fav_td2);
+					fav_tr.appendChild(fav_td3);
+					fav_tr.appendChild(fav_td4);
+					fav_tr.appendChild(fav_td5);
+					fav_tr.appendChild(fav_td6);
+
+					favs_table.appendChild(fav_tr);
+
+					
+
+					
+				}
+				fav_div.appendChild(favs_table);
+				//display the favorites in
+				//for(f in favs_array){
+					//$(favs_array[f].place_id).parentElement.parentElement.childNodes[4].childNodes[0].html("<i class='fa fa-star' style='color:yellow'></i>");
+				//}
+			}
+			//handling the favorites tab
+			
+			
+				
+			
+		}
+
+		function del_row_favs(clicked_ele){
+			var fav_div = document.getElementById("favorites");
+			var clicked_tr = clicked_ele.parentElement.parentElement;
+			var place_id = clicked_tr.childNodes[5].childNodes[0].id;
+
+			var favs_array = JSON.parse(window.localStorage.getItem("favs"));
+			to_delete = favs_array.length - 1;
+			for(f in favs_array){
+				if(favs_array[f]["place_id"] == place_id){
+				to_delete = f;
+				break;
+				}
+			}
+			favs_array.splice(to_delete,1);
+			console.log(favs_array);
+			window.localStorage.setItem("favs",JSON.stringify(favs_array));
+
+			//remove the existing table
+			$("#favorites").html("");
+			favs_array = JSON.parse(window.localStorage.getItem("favs"));
+			if(favs_array == undefined || favs_array.length == 0){
+				var warning_div = document.createElement("div");
+				warning_div.style.marginTop = "35px";
+				var warning_text = "No records.";
+				var warning_text_node = document.createTextNode(warning_text);
+				warning_div.classList.add("alert");
+				warning_div.classList.add("alert-warning");
+				warning_div.setAttribute("role","alert");
+				warning_div.appendChild(warning_text_node);
+				fav_div.appendChild(warning_div);
+			}
+			else{
+				var favs_table = document.createElement("table");
+				favs_table.classList.add("table");
+				favs_table.id = "fav_table";
+				var tbl_heading = ["#","Category","Name","Address","Favorite","Details"];
+				favs_table.style.marginLeft = "auto";
+				favs_table.style.marginRight = "auto";
+				favs_table.style.marginTop = "25px";
+				var thead = document.createElement("thead");
+				var head_row = document.createElement("tr");
+				
+				for(k in tbl_heading){
+					var th = document.createElement("th");
+					var text = document.createTextNode(tbl_heading[k]);
+					th.appendChild(text);	
+					head_row.appendChild(th);
+				}
+				thead.appendChild(head_row);
+				favs_table.appendChild(thead);
+
+				for(f in favs_array){
+					var fav_tr = document.createElement("tr");
+					var fav_td1 = document.createElement("td");
+					var fav_td2 = document.createElement("td");
+					var fav_td3 = document.createElement("td");
+					var fav_td4 = document.createElement("td");
+					var fav_td5 = document.createElement("td");
+					var fav_td6 = document.createElement("td");
+
+					var fav_td1_txt = document.createTextNode((parseInt(f)+1).toString());
+					console.log(fav_td1_txt);
+					fav_td1.appendChild(fav_td1_txt);
+
+					fav_td2.innerHTML = favs_array[f]["payload"]["category"];
+
+					fav_td3_txt = document.createTextNode(favs_array[f]["payload"]["name"]);
+					fav_td3.appendChild(fav_td3_txt);
+
+					fav_td4_txt = document.createTextNode(favs_array[f]["payload"]["address"]);
+					fav_td4.appendChild(fav_td4_txt);
+
+					fav_td5_ele = document.createElement("button");
+					fav_td5_ele.classList.add("btn");
+					fav_td5_ele.classList.add("border");
+					fav_td5_ele.innerHTML = "<i class= 'fa fa-trash'></i>";
+					fav_td5_ele.addEventListener('click',function(){
+						del_row_favs(this);
+						var place_id_clicked = this.parentElement.parentElement.childNodes[5].childNodes[0].name;
+						var button_of_row = document.getElementById(place_id_clicked);
+						button_of_row.parentElement.parentElement.childNodes[4].childNodes[0].innerHTML = "<i class='fa fa-star-o'></i>";
+					});
+					fav_td5.appendChild(fav_td5_ele);
+
+					fav_td6_ele = document.createElement("button");
+					fav_td6_ele.classList.add("btn");
+					fav_td6_ele.classList.add("border");
+					fav_td6_ele.innerHTML = "<i class='fa fa-chevron-right'></i>";
+					fav_td6_ele.name = place_id;
+					fav_td6.appendChild(fav_td6_ele);
+
+					fav_tr.appendChild(fav_td1);
+					fav_tr.appendChild(fav_td2);
+					fav_tr.appendChild(fav_td3);
+					fav_tr.appendChild(fav_td4);
+					fav_tr.appendChild(fav_td5);
+					fav_tr.appendChild(fav_td6);
+
+					favs_table.appendChild(fav_tr);
+				}
+
+				fav_div.appendChild(favs_table);
+			}
+
+
+		}
+
+		function add_row_favs(favs_array,place_id){
+			
+			var fav_div = document.getElementById("favorites");
+			var fav_record = favs_array.length - 1;
+
+			if(document.getElementById("fav_table"))
+			{
+				var favs_table = document.getElementById("fav_table");
+				var fav_tr = document.createElement("tr");
+				var fav_td1 = document.createElement("td");
+				var fav_td2 = document.createElement("td");
+				var fav_td3 = document.createElement("td");
+				var fav_td4 = document.createElement("td");
+				var fav_td5 = document.createElement("td");
+				var fav_td6 = document.createElement("td");
+
+				var fav_td1_txt = document.createTextNode(favs_array[fav_record]["payload"]["#"]);
+				console.log(fav_td1_txt);
+				fav_td1.appendChild(fav_td1_txt);
+
+				fav_td2.innerHTML = favs_array[fav_record]["payload"]["category"];
+
+				fav_td3_txt = document.createTextNode(favs_array[fav_record]["payload"]["name"]);
+				fav_td3.appendChild(fav_td3_txt);
+
+				fav_td4_txt = document.createTextNode(favs_array[fav_record]["payload"]["address"]);
+				fav_td4.appendChild(fav_td4_txt);
+
+				fav_td5_ele = document.createElement("button");
+				fav_td5_ele.classList.add("btn");
+				fav_td5_ele.classList.add("border");
+				fav_td5_ele.innerHTML = "<i class= 'fa fa-trash'></i>";
+				fav_td5_ele.addEventListener('click',function(){
+					del_row_favs(this);
+					var place_id_clicked = this.parentElement.parentElement.childNodes[5].childNodes[0].name;
+					var button_of_row = document.getElementById(place_id_clicked);
+					button_of_row.parentElement.parentElement.childNodes[4].childNodes[0].innerHTML = "<i class='fa fa-star-o'></i>";
+				});
+				fav_td5.appendChild(fav_td5_ele);
+
+				fav_td6_ele = document.createElement("button");
+				fav_td6_ele.classList.add("btn");
+				fav_td6_ele.classList.add("border");
+				fav_td6_ele.innerHTML = "<i class='fa fa-chevron-right'></i>";
+				fav_td6_ele.name = place_id;
+				fav_td6.appendChild(fav_td6_ele);
+
+				fav_tr.appendChild(fav_td1);
+				fav_tr.appendChild(fav_td2);
+				fav_tr.appendChild(fav_td3);
+				fav_tr.appendChild(fav_td4);
+				fav_tr.appendChild(fav_td5);
+				fav_tr.appendChild(fav_td6);
+
+				favs_table.appendChild(fav_tr);
+				console.log("Table exists");
+			}
+			else{
+				
+				console.log("Table does not exist");
+				//var fav_record = favs_array.length - 1;
+				$("#favorites").html("");
+				var favs_table = document.createElement("table");
+				favs_table.classList.add("table");
+				favs_table.id = "fav_table";
+				var tbl_heading = ["#","Category","Name","Address","Favorite","Details"];
+				favs_table.style.marginLeft = "auto";
+				favs_table.style.marginRight = "auto";
+				favs_table.style.marginTop = "25px";
+				var thead = document.createElement("thead");
+				var head_row = document.createElement("tr");
+				
+				for(k in tbl_heading){
+					var th = document.createElement("th");
+					var text = document.createTextNode(tbl_heading[k]);
+					th.appendChild(text);	
+					head_row.appendChild(th);
+				}
+				thead.appendChild(head_row);
+				
+				favs_table.appendChild(thead);
+				var fav_tr = document.createElement("tr");
+				var fav_td1 = document.createElement("td");
+				var fav_td2 = document.createElement("td");
+				var fav_td3 = document.createElement("td");
+				var fav_td4 = document.createElement("td");
+				var fav_td5 = document.createElement("td");
+				var fav_td6 = document.createElement("td");
+
+				var fav_td1_txt = document.createTextNode(favs_array[fav_record]["payload"]["#"]);
+				console.log(fav_td1_txt);
+				fav_td1.appendChild(fav_td1_txt);
+
+				fav_td2.innerHTML = favs_array[fav_record]["payload"]["category"];
+
+				fav_td3_txt = document.createTextNode(favs_array[fav_record]["payload"]["name"]);
+				fav_td3.appendChild(fav_td3_txt);
+
+				fav_td4_txt = document.createTextNode(favs_array[fav_record]["payload"]["address"]);
+				fav_td4.appendChild(fav_td4_txt);
+
+				fav_td5_ele = document.createElement("button");
+				fav_td5_ele.classList.add("btn");
+				fav_td5_ele.classList.add("border");
+				fav_td5_ele.innerHTML = "<i class= 'fa fa-trash'></i>";
+				fav_td5_ele.addEventListener('click',function(){
+					del_row_favs(this);
+					var place_id_clicked = this.parentElement.parentElement.childNodes[5].childNodes[0].name;
+					var button_of_row = document.getElementById(place_id_clicked);
+					button_of_row.parentElement.parentElement.childNodes[4].childNodes[0].innerHTML = "<i class='fa fa-star-o'></i>";
+				});
+				fav_td5.appendChild(fav_td5_ele);
+
+				fav_td6_ele = document.createElement("button");
+				fav_td6_ele.classList.add("btn");
+				fav_td6_ele.classList.add("border");
+				fav_td6_ele.innerHTML = "<i class='fa fa-chevron-right'></i>";
+				fav_td6_ele.name = place_id;
+				fav_td6.appendChild(fav_td6_ele);
+
+				fav_tr.appendChild(fav_td1);
+				fav_tr.appendChild(fav_td2);
+				fav_tr.appendChild(fav_td3);
+				fav_tr.appendChild(fav_td4);
+				fav_tr.appendChild(fav_td5);
+				fav_tr.appendChild(fav_td6);
+
+				favs_table.appendChild(fav_tr);
+
+				fav_div.appendChild(favs_table);
+
+			}
+
+		}
+
+		function here_validation(){
+			var str_loc = document.getElementById("location");
+			str_loc.disabled="disabled";
+			var classes = str_loc.classList;
+			if(classes.contains('is-invalid')){
+				classes.remove('is-invalid');
+			}
+		}
+
+		function calculateAndDisplayRoute(directionsService,directionsDisplay){
+			directionsService.route({
+          origin: "Chicago",
+          destination: "Los Angeles",
+          travelMode: 'DRIVING'
+        }, function(response, status) {
+          if (status === 'OK') {
+            directionsDisplay.setDirections(response);
+          } else {
+            window.alert('Directions request failed due to ' + status);
+          }
+        });
+
+		}
+
+		function addTable(response,value){
+			console.log("Successful in getting details");
+		}	
+
+		function displayYreviews(response){
+			console.log(response);
+			for(r in response){
+														
+				var yreviews_div = document.getElementById("yelpreviews");
+				var review_div = document.createElement("div");
+				review_div.classList.add("row");
+				review_div.classList.add("border");
+				review_div.classList.add("rounded");
+				review_div.style.marginTop = "6px";
+				
+				var author_photo_a = document.createElement("a");
+				author_photo_a.setAttribute('href',response[r].url);
+				author_photo_a.setAttribute('target','_blank');
+				var author_photo = document.createElement("img");
+				author_photo_div = document.createElement("div");
+				author_photo_div.style.height = "45px";
+				author_photo_div.style.width = "45px";
+				if(response[r].user.image_url != null){
+					author_photo.src = response[r].user.image_url;
+					author_photo.style.height = "45px";
+					author_photo.style.borderRadius = "50%";
+					author_photo_a.appendChild(author_photo);
+					author_photo_div.appendChild(author_photo_a);
+				}
+				var name_review_div = document.createElement("div");
+				name_review_div.classList.add("col");
+				var author_name_a = document.createElement("a");
+				var author_name = response[r].user.name;
+				var author_name_txt_node = document.createTextNode(author_name);
+				author_name_a.innerHTML = author_name;
+				author_name_a.setAttribute('target','_blank');
+				author_name_a.setAttribute('href',response[r].url);
+				author_name_a.style.textDecoration = "none";
+				name_review_div.appendChild(author_name_a);
+
+				var rating_time_div = document.createElement("div");
+				rating_time_div.classList.add("row");
+				rating_time_div.style.marginRight = "0px";
+				rating_time_div.style.marginLeft = "0px";
+				var rating_div1 = document.createElement("div");
+				rating_div1.id = "rateYo"+r;
+				var time_div = document.createElement("span");
+				time_div.innerHTML = response[r].time_created;
+				rating_time_div.appendChild(rating_div1);
+				rating_time_div.appendChild(time_div);
+				name_review_div.appendChild(rating_time_div);														
+				var review = document.createElement("p");
+				var review_txt = document.createTextNode(response[r].text);
+				review.appendChild(review_txt);
+				name_review_div.appendChild(review);
+				
+				review_div.appendChild(author_photo_div);
+				review_div.appendChild(name_review_div);
+				
+				yreviews_div.appendChild(review_div);
+				
+				console.log(Math.ceil(response[r].rating % 6));
+			}
+			for(r in response){
+				$("#rateYo"+r).rateYo({
+					rating:((response[r].rating /Math.ceil(response[r].rating)) * 100)+"%",
+					precision: 1,
+					starWidth: "15px",
+					readOnly: true,
+					numStars: Math.ceil(response[r].rating)
+				});
+			}
+
+		}
+
+		function displayGreviews(response){
+			for(r in response){
+				var greviews_div = document.getElementById("googlereviews");
+				var review_div = document.createElement("div");
+				review_div.classList.add("row");
+				review_div.classList.add("border");
+				review_div.classList.add("rounded");
+				review_div.style.marginTop = "6px";
+				
+				var author_photo_a = document.createElement("a");
+				author_photo_a.setAttribute('href',response[r].author_url);
+				author_photo_a.setAttribute('target','_blank');
+				var author_photo = document.createElement("img");
+				author_photo_div = document.createElement("div");
+				author_photo_div.style.height = "45px";
+				author_photo_div.style.width = "45px";
+				if(response[r].profile_photo_url != undefined){
+					author_photo.src = response[r].profile_photo_url;
+					author_photo.style.height = "45px";
+					author_photo.style.borderRadius = "50%";
+					author_photo_a.appendChild(author_photo);
+					author_photo_div.style.marginTop = "3px";
+					author_photo_div.style.marginRight = "auto";
+					author_photo_div.style.marginLeft = "auto";
+					author_photo_div.appendChild(author_photo_a);
+				}
+
+				var name_review_div = document.createElement("div");
+				name_review_div.classList.add("col");
+				var author_name_a = document.createElement("a");
+				var author_name = response[r].author_name;
+				var author_name_txt_node = document.createTextNode(author_name);
+				author_name_a.innerHTML = author_name;
+				author_name_a.setAttribute('target','_blank');
+				author_name_a.setAttribute('href',response[r].author_url);
+				author_name_a.style.textDecoration = "none";
+				name_review_div.appendChild(author_name_a);
+
+				var rating_time_div = document.createElement("div");
+				rating_time_div.classList.add("row");
+				rating_time_div.style.marginRight = "0px";
+				rating_time_div.style.marginLeft = "0px";
+				var rating_div1 = document.createElement("div");
+				rating_div1.id = "rateYog"+r;
+				var time_div = document.createElement("span");
+				date1 = new Date(response[r].time * 1000);
+				//date2 = moment.utc(date1.toUTCString()).format('YYYY-MM-DD hh:mm:ss');
+				//console.log(date2);
+				date2 = moment.unix(response[r].time).format('YYYY-MM-DD H:mm:ss');
+				console.log(date2);
+				time_div.innerHTML = date2;
+				rating_time_div.appendChild(rating_div1);
+				rating_time_div.appendChild(time_div);
+				name_review_div.appendChild(rating_time_div);														
+				var review = document.createElement("p");
+				var review_txt = document.createTextNode(response[r].text);
+				review.appendChild(review_txt);
+				name_review_div.appendChild(review);
+				
+				review_div.appendChild(author_photo_div);
+				review_div.appendChild(name_review_div);
+				
+				greviews_div.appendChild(review_div);
+
+				//console.log(Math.ceil(response.reviews[r].rating % 6));
+			}
+			
+			for(r in response){
+				$("#rateYog"+r).rateYo({
+					rating: ((response[r].rating/Math.ceil(response[r].rating)) * 100) + "%",
+					precision: 1,
+					starWidth: "15px",
+					readOnly: true,
+					numStars: Math.ceil(response[r].rating)
+				});
+					
+			}
+		}
+
+		function compareH(a, b){
+		  let comparison = 0;
+
+		  if (a.rating > b.rating) {
+		    comparison = -1;
+		  } else if (b.rating > a.rating) {
+		    comparison = 1;
+		  }
+
+		  return comparison;
+		}
+
+		function compareL(a, b){
+		  let comparison = 0;
+
+		  if (a.rating > b.rating) {
+		    comparison = 1;
+		  } else if (b.rating > a.rating) {
+		    comparison = -1;
+		  }
+
+		  return comparison;
+		}
+
+		function compareM(a, b){
+		  let comparison = 0;
+
+		  if (a.time > b.time) {
+		    comparison = -1;
+		  } else if (b.time > a.time) {
+		    comparison = 1;
+		  }
+
+		  return comparison;
+		}
+
+		function compareLo(a, b){
+		  let comparison = 0;
+
+		  if (a.time > b.time) {
+		    comparison = 1;
+		  } else if (b.time > a.time) {
+		    comparison = -1;
+		  }
+
+		  return comparison;
+		}
+
+		function compareLoY(a, b){
+		  let comparison = 0;
+
+		  if (a.time_created > b.time_created) {
+		    comparison = 1;
+		  } else if (b.time_created > a.time_created) {
+		    comparison = -1;
+		  }
+
+		  return comparison;
+		}
+
+		function compareMY(a, b){
+		  let comparison = 0;
+
+		  if (a.time_created > b.time_created) {
+		    comparison = -1;
+		  } else if (b.time_created > a.time_created) {
+		    comparison = 1;
+		  }
+
+		  return comparison;
+		}
+		
+		function details_service(){
+			$("#results").css("display","none");
+			$("#details").css("display","block");
+
+			$($("#clothing-nav li a.active").attr("href")).removeClass("active show");
+			$("#clothing-nav li a.active").removeClass("active");
+
+			$("#info-tab").addClass("active");
+			$($("#info-tab").attr("href")).addClass("active show");
+		}	
+		var response1 = "";
+		function displayTable(response){
+			
+			var table_display_div = document.getElementById("results");
+			var one_page_div = document.createElement("div");
+			one_page_div.id = value_of_cur;
+			//display the Details button above the table
+			var details_btn = document.createElement("button");
+			details_btn.innerHTML = "Details <i class= 'fa fa-chevron-right'></i>";
+			details_btn.classList.add("pull-right");
+			details_btn.classList.add("btn");
+			details_btn.classList.add("border");
+			details_btn.style.marginBottom = "25px";
+			details_btn.disabled = "disabled";
+			details_btn.id = "details_btn_"+value_of_cur;
+			details_btn.addEventListener('click',function (){
+				details_service();
+			});
+
+			
+			//console.log(response);
+			if(response){// take care of no records found!
+				var json_results = JSON.parse(response)['results']; //may error out here
+				if(json_results.length!=0){
+					one_page_div.appendChild(details_btn);
+					//$("#det_btn").css('display','block');
+					var tbl_heading = ["#","Category","Name","Address","Favorite","Details"];
+					var table = document.createElement("table");
+					//table.id = value;
+					table.classList.add("table");
+					table.classList.add("table-hover");
+					table.style.marginLeft = "auto";
+					table.style.marginRight = "auto";
+					table.style.marginTop = "25px";
+					var thead = document.createElement("thead");
+					var head_row = document.createElement("tr");
+					for(k in tbl_heading){
+						var th = document.createElement("th");
+						var text = document.createTextNode(tbl_heading[k]);
+						th.appendChild(text);	
+						head_row.appendChild(th);
+					}
+					thead.appendChild(head_row);
+					table.appendChild(thead);
+										
+					var count_a = 0;
+					for(j in json_results){
+						
+						var obj = json_results[j];
+						var obj_name = obj['name'];
+						var obj_icon = obj['icon'];
+						var obj_addr = obj['vicinity'];
+						lat_lng = obj['geometry']['location'];
+						lat = lat_lng["lat"];
+						lng = lat_lng["lng"];
+						var tbody = document.createElement("tbody");
+						var tr = document.createElement("tr");
+						td0 = document.createElement("td");
+						td1 = document.createElement("td");
+						td2 = document.createElement("td");
+						td3 = document.createElement("td");
+						td4 = document.createElement("td");
+						td4.style.textAlign = "center";
+						td5 = document.createElement("td");
+						td5.style.textAlign = "center";
+						
+						var txt0_col = document.createTextNode(""+(count_a+1));
+						var img_col = document.createElement('img');
+						img_col.src = obj_icon;
+						img_col.style.height = "40px";
+						var txt1_col = document.createTextNode(obj_name);
+						var txt2_col = document.createTextNode(obj_addr);
+						var button_4_col = document.createElement("button");
+						//button_4_col.setAttribute('type','button');
+						button_4_col.classList.add("btn");
+						button_4_col.classList.add("border");
+						var content_4_col = document.createElement("i");
+						content_4_col.classList.add("fa");
+						content_4_col.classList.add("fa-star-o");
+						button_4_col.innerHTML = "<i class='fa fa-star-o'></i>";
+						button_4_col.addEventListener('click',function(){
+							
+							if(this.childNodes[0].style.color == "yellow"){
+								console.log(this.childNodes[0]);
+								this.innerHTML = "<i class='fa fa-star-o'></i>";
+								
+								del_row_favs(this);
+								//
+
+								//console.log(localStorage.getItem("lastname"));
+							}
+							else{
+								this.innerHTML = "<i class='fa fa-star' style='color:yellow'></i>";
+								//localStorage.clear();
+								var favs = JSON.parse(window.localStorage.getItem("favs"));
+
+								if(favs == undefined){
+									favs = [];
+									val = 0;
+								}
+								else{
+									val = favs.length;
+								}
+								
+								var clicked_tr = this.parentElement.parentElement;
+								var place_id = clicked_tr.childNodes[5].childNodes[0].id;
+								//append current record
+								//var main_obj = {};
+								var fav_obj = {};
+								fav_obj["#"] = val + 1;
+								fav_obj["category"] = clicked_tr.childNodes[1].innerHTML;
+								fav_obj["name"] = clicked_tr.childNodes[2].innerHTML;
+								fav_obj["address"] = clicked_tr.childNodes[3].innerHTML;
+								main_obj = {};
+								main_obj["place_id"] = place_id;
+								main_obj["payload"] = fav_obj;
+								
+								console.log(favs);
+								var add = 1;
+								for(f in favs){
+									if(favs[f]["place_id"] == place_id){
+										add = 0;
+									}	
+								}
+								if(add == 1){
+									favs.push(main_obj);
+									window.localStorage.setItem("favs",JSON.stringify(favs));	
+									add_row_favs(favs,place_id);
+								}
+								
+								//console.log(window.localStorage.favs);
+								//console.log(fav_obj);
+								var obj = JSON.parse(window.localStorage.getItem("favs"));
+								console.log("local storage obj ")
+								console.log(obj);
+								
+
+							}
+							
+
+						});
+						//button_4_col.value = "Hi";
+						var button_5_col = document.createElement("button");
+						button_5_col.classList.add("btn");
+						button_5_col.classList.add("border");
+						var content_5_col = document.createElement("i");
+						content_5_col.classList.add("fa");
+						content_5_col.classList.add("fa-chevron-right");
+						button_5_col.innerHTML = "<i class='fa fa-chevron-right'></i>";
+						button_5_col.id = obj["place_id"];
+						button_5_col.addEventListener('click',function(){
+							
+							//for activating the details button
+							var one_page_div_id = this.parentElement.parentElement.parentElement.parentElement.parentElement.id;
+							console.log("one"+ one_page_div_id);
+							var details_btn = document.getElementById("details_btn_"+one_page_div_id);
+
+							if(details_btn.disabled == true){
+								details_btn.removeAttribute("disabled");
+							}
+
+							var details = document.getElementById("details_btn");
+							//console.log("Clicked!");
+
+							highlighted_element = document.getElementsByClassName("highlighted")[0];
+							if(highlighted_element){
+								highlighted_element.classList.remove("highlighted");
+								highlighted_element.classList.remove("alert-warning");
+							}
+							
+							var highlight_element = this.parentElement.parentElement;
+							highlight_element.classList.add("alert-warning");
+							highlight_element.classList.add("highlighted");
+							
+							var info = document.getElementById("info");
+							info.innerHTML = "";
+							
+							//removing photo elements
+							var photo_div0 = document.getElementById("div0");
+							var photo_div1 = document.getElementById("div1");
+							var photo_div2 = document.getElementById("div2");
+							var photo_div3 = document.getElementById("div3");
+							photo_div0.innerHTML = "";
+							photo_div1.innerHTML = "";
+							photo_div2.innerHTML = "";
+							photo_div3.innerHTML = "";
+
+							var photos_tab = document.getElementById("photos");
+							var warning_div = document.getElementById("photos_warning_div");
+							if(warning_div != undefined){
+								photos_tab.removeChild(warning_div);
+							}
+
+							//removing map panel
+							$("#panel").html("");
+
+							//removing prior reviews
+							var googlereviews_warning_div = document.getElementById("googlereviews_warning_div");
+							var yelpreviews_warning_div = document.getElementById("yelpreviews_warning_div");
+							var googlereviews = document.getElementById("googlereviews");
+							var yelpreviews = document.getElementById("yelpreviews");
+							if(googlereviews_warning_div != undefined){
+								googlereviews.removeChild(googlereviews_warning_div);
+							}
+
+							if(yelpreviews_warning_div != undefined){
+								yelpreviews.removeChild(yelpreviews_warning_div);
+							}
+
+							//resetting the info tab to open and active
+							$($("#clothing-nav li a.active").attr("href")).removeClass("active show");
+							$("#clothing-nav li a.active").removeClass("active");
+
+							$("#info-tab").addClass("active");
+							$($("#info-tab").attr("href")).addClass("active show");
+
+							$("#results").css("display","none");
+							$("#details").css("display","block");
+							
+							var request = {placeId: this.id}; 
+							//console.log(this.id);
+							var map = new google.maps.Map(document.getElementById('map'), {
+          					center: {lat: -33.866, lng: 151.196},zoom: 15});
+
+							var service = new google.maps.places.PlacesService(map);
+
+							var fav_btn_details = document.getElementById("fav_btn_details");
+							fav_btn_details.disabled = "disabled";
+							var tweeter = document.getElementById("twitter_a");
+							tweeter.disabled = "disabled";
+
+							service.getDetails(request,function(place, status){
+          						if (status === google.maps.places.PlacesServiceStatus.OK) {
+            						var marker = new google.maps.Marker({
+              						map: map,
+              						position: place.geometry.location
+            						});
+            						
+            						//enable favs and twitter
+            						fav_btn_details.removeAttribute("disabled");
+            						tweeter.removeAttribute("disabled");
+
+            						var h5 = document.getElementById("details_title");
+            						h5.innerHTML = place.name;
+            						var text = "Check out "+ place.name + " located at " + place.formatted_address+". Website: ";
+            						var url = place.website;
+            						var href = "https://twitter.com/intent/tweet?text="+ text+ "&url="+ url+ "&hashtags=TravelAndEntertainmentSearch";
+            						document.getElementById("twitter_a").href = href;
+
+            						$("#details_div").css("display","block");
+									var info_table = document.createElement("table");
+									info_table.classList.add("table");
+									info_table.classList.add("table-striped");
+									var info_tbody = document.createElement("tbody");
+									tbl_rows = ["Address","Phone Number","Price Level","Rating","Google Page","Website","Hours"];
+									values = {"Address":place.formatted_address,"Phone":place.international_phone_number,"Price":place.price_level,"Rating":place.rating,"Google":place.url,"Website":place.website,"Hours":place.opening_hours};
+									for(row in tbl_rows){
+										if(values[tbl_rows[row].split(" ")[0]]){
+											var i_row = document.createElement("tr");
+											var td_1 = document.createElement("td");
+											td_1.style.fontWeight = "bold";
+											var td_1_txt = document.createTextNode(tbl_rows[row]);
+											td_1.appendChild(td_1_txt);
+											i_row.appendChild(td_1);
+											var td_2 = document.createElement("td");
+											td_2.id= tbl_rows[row].split(" ")[0];
+											if(tbl_rows[row] == "Price Level"){
+												var td_2_txt = "";
+												for(var i=0; i<values[tbl_rows[row].split(" ")[0]]; i++)
+													td_2_txt += "$";
+
+													values[tbl_rows[row].split(" ")[0]] = td_2_txt; 	
+													td_2_txt = document.createTextNode(values[tbl_rows[row].split(" ")[0]]);
+													td_2.appendChild(td_2_txt);
+											}
+											else if(tbl_rows[row] == "Google Page" || tbl_rows[row] == "Website"){
+												var a = document.createElement("a");
+												a.setAttribute("href",values[tbl_rows[row].split(" ")[0]]);
+												a.setAttribute("target","_blank");
+												var td_2_txt = document.createTextNode(values[tbl_rows[row].split(" ")[0]]);
+												a.appendChild(td_2_txt);
+												td_2.appendChild(a);
+											}
+											else if(tbl_rows[row] == "Hours"){
+												var today = moment().utcOffset(place.utc_offset).format('dddd');
+												day_num = {"Monday":"0","Tuesday":"1","Wednesday":"2","Thursday":"3","Friday":"4","Saturday":"5","Sunday":"6"};
+												today_num = parseInt(day_num[today]);
+												console.log(today_num);
+												weekday_text = place.opening_hours.weekday_text;
+												list_times = [];
+												//list_times[0] = weekday_text[day_num[today]];
+												var r = 0;
+												while(r < 7){
+													list_times[r] = weekday_text[(today_num+r)%7];
+													r++;
+												}
+												console.log(list_times);
+												var td_2_text = (values[tbl_rows[row]].open_now == true)? "Open now: ":"Closed ";
+												//var open_hours_list = place.weekday_text;
+												if(td_2_text == "Open now: "){
+													td_2_text += list_times[0].split(": ")[1]+ " ";
+												}
+
+												var open_hours_btn = document.createElement("button");
+												open_hours_btn.innerHTML = "Daily open hours";
+												open_hours_btn.style.textDecoration = "none";
+												open_hours_btn.setAttribute('data-toggle','modal');
+												open_hours_btn.setAttribute('data-target','#smallShoes');
+												open_hours_btn.setAttribute('type','button');
+												open_hours_btn.classList.add("btn");
+												open_hours_btn.classList.add("btn-link");
+												//console.log(values[tbl_rows[row]].open_now);
+												modal_div = document.createElement("div");
+												modal_div.classList.add("modal");
+												modal_div.classList.add("fade");
+												modal_div.id = "smallShoes";
+												modal_div.setAttribute('tabindex',"-1");
+												modal_div.setAttribute("role","dialog");
+												modal_div.setAttribute("aria-labelledby","modalLabelSmall");
+												modal_div.setAttribute("aria-hidden","true");
+												modal_dialog_div = document.createElement("div");
+												modal_dialog_div.classList.add("modal-dialog");
+												//modal_dialog_div.classList.add("modal-lg");
+												modal_content_div = document.createElement("div");
+												modal_content_div.classList.add("modal-content");
+												modal_header_div = document.createElement("div");
+												modal_header_div.classList.add("modal-header");
+												h4 = document.createElement("h5");
+												h4.classList.add("modal-title");
+												h4.id = "modalLabelSmall";
+												h4.innerHTML = "Open hours";
+												modal_header_div.appendChild(h4);
+												button_close = document.createElement("button");
+												button_close.setAttribute("type","button");
+												button_close.classList.add("close");
+												button_close.setAttribute("data-dismiss","modal");
+												button_close.setAttribute("aria-label","Close");
+												span_btn = document.createElement("span");
+												span_btn.setAttribute("aria-hidden","true");
+												span_btn.innerHTML = "&times;";
+												button_close.appendChild(span_btn);
+												modal_header_div.appendChild(button_close);
+												modal_footer_div = document.createElement("div");
+												modal_footer_div.classList.add("modal-footer");
+												button_close_footer = document.createElement("button");
+												button_close_footer.setAttribute("type","button");
+												button_close_footer.classList.add("btn");
+												button_close_footer.classList.add("btn-secondary");
+												button_close_footer.setAttribute("data-dismiss","modal");
+												button_close_footer.innerHTML = "Close";
+												modal_footer_div.appendChild(button_close_footer);
+												modal_content_div.appendChild(modal_header_div);
+												modal_body_div = document.createElement("div");
+												
+												//generate the table
+												var time_table = document.createElement("table");
+												time_table.classList.add("table");
+												for(l in list_times){
+													var tt_tr = document.createElement("tr");
+													tt_td1 = document.createElement("td"); 
+													tt_td2 = document.createElement("td");
+													tt_td1_txt = document.createTextNode(list_times[l].split(": ")[0]);
+													tt_td2_txt = document.createTextNode(list_times[l].split(": ")[1]);
+													tt_td1.appendChild(tt_td1_txt);
+													tt_td2.appendChild(tt_td2_txt);
+													tt_tr.appendChild(tt_td1);
+													tt_tr.appendChild(tt_td2);
+
+													if(l == 0){
+														tt_td1.style.fontWeight = "bold";
+														tt_td2.style.fontWeight = "bold";
+													}
+													time_table.appendChild(tt_tr);
+												}
+												modal_body_content = time_table;
+												modal_body_div.appendChild(modal_body_content);
+												modal_content_div.appendChild(modal_body_div);
+												modal_content_div.appendChild(modal_footer_div);
+												modal_dialog_div.appendChild(modal_content_div);
+												modal_div.appendChild(modal_dialog_div); 
+												var td_2_txt = document.createTextNode(td_2_text);
+
+												td_2.appendChild(td_2_txt);
+												td_2.appendChild(open_hours_btn);
+												td_2.appendChild(modal_div);
+											}
+											else if(tbl_rows[row] == "Rating"){
+												var main_rating_div = document.createElement("div");
+												main_rating_div.classList.add("row");
+												main_rating_div.style.marginRight = "0px";
+												main_rating_div.style.marginLeft = "0px";
+												var text_rating = document.createTextNode(place.rating);
+												main_rating_div.appendChild(text_rating);
+												var rating_div = document.createElement("div");
+												rating_div.id = "rateYo";
+												main_rating_div.appendChild(rating_div);
+												td_2.appendChild(main_rating_div);
+												$(document).ready(function(){
+													$("#rateYo").rateYo({rating:place.rating,normalFill: "#FFFFFF",starWidth: "20px",readOnly: true});
+												});
+											}
+											else{
+												var td_2_txt = document.createTextNode(values[tbl_rows[row].split(" ")[0]]);
+												td_2.appendChild(td_2_txt);
+											}
+											i_row.appendChild(td_2);
+											info_tbody.appendChild(i_row);
+										}
+									}
+									info_table.appendChild(info_tbody);
+									var info_tab = document.getElementById("info");
+									info_tab.appendChild(info_table);
+									console.log(place);
+									/*
+									var add = document.getElementById("Address");
+									var add_txt = document.createTextNode(place.formatted_address);
+									add.appendChild(add_txt);
+									add = document.getElementById("Phone");
+									add_txt = document.createTextNode(place.international_phone_number);
+									add.appendChild(add_txt);
+									add = document.getElementById("Google");
+									add_txt = document.createTextNode(place.international_phone_number);
+									add.appendChild(add_txt);
+									*/
+									//photos tab implementation
+									if(place.photos == undefined){
+										var warning_div = document.createElement("div");
+										warning_div.id = "photos_warning_div";
+										warning_div.style.marginTop = "35px";
+										var warning_text = "No records.";
+										var warning_text_node = document.createTextNode(warning_text);
+										warning_div.classList.add("alert");
+										warning_div.classList.add("alert-warning");
+										warning_div.setAttribute("role","alert");
+										warning_div.appendChild(warning_text_node);
+										var photos_div = document.getElementById("photos");
+										photos_div.appendChild(warning_div);
+									}
+
+									for(p in place.photos){
+										console.log(place.photos[p].getUrl({'maxWidth':2000, 'maxHeight': 2000}));
+										var img = document.createElement("img");
+										img.src = place.photos[p].getUrl({'maxWidth':250, 'maxHeight': 300});
+										img.id = place.photos[p].getUrl({'maxWidth':2000, 'maxHeight': 2000});
+										img.addEventListener('click',function(){
+											window.open(this.id);
+										});
+										id = p % 4;
+										var div_column = document.getElementById("div"+id);
+										div_column.appendChild(img); 
+									}
+
+
+									//map tab implementation
+									var to = document.getElementById("to");
+									to.value = place.name +", "+place.formatted_address;
+									var from = document.getElementById("from");
+									var autocomplete = new google.maps.places.Autocomplete(from);
+									var from_val = "";
+									if($('input[name=loc]:checked').val() == "current"){
+										from_val = "Your location";
+									}
+									else{
+										from_val = $('input[name=location]').val();
+									}
+									$("#from").val(from_val);
+
+									//loading the map
+									var directionsService = new google.maps.DirectionsService;
+							        var directionsDisplay = new google.maps.DirectionsRenderer;
+							        var map = new google.maps.Map(document.getElementById('main_map'), {
+							          zoom: 15,
+							          center: place.geometry.location
+							        });
+							        directionsDisplay.setMap(map);
+							        directionsDisplay.setPanel(document.getElementById("panel"));
+							        marker = new google.maps.Marker({
+              						map: map,
+              						position: place.geometry.location
+            						});
+
+							       	var get_directions_btn = document.getElementById("get_directions");
+							      	get_directions_btn.addEventListener('click',function(){
+							      		marker.setMap(null);
+							      		var org = {};
+							      		if($("#from").val() == "Your location" || $("#from").val() == "My location"){
+							      			org = {lat:here_json.lat,lng:here_json.lon};
+							      		}
+							      		else{
+							      			org = $("#from").val();
+							      		}
+							      		directionsService.route({
+          									origin: org,
+          									destination: $("#to").val(),
+          									travelMode: $("#tm").val(),
+          									provideRouteAlternatives: true
+        									}, function(response, status) {
+          										if (status === 'OK') {
+            										directionsDisplay.setDirections(response);
+          										} 
+          										else {
+            										window.alert('Directions request failed due to ' + status);
+          										}
+        								});
+							      	});
+							      	var peg_btn = document.getElementById("peg");
+							      	peg_btn.addEventListener('click',function(){
+							      		var peg_img = document.getElementById("peg_img");
+							      		if(peg_img.src == "http://cs-server.usc.edu:45678/hw/hw8/images/Pegman.png"){
+							      			peg_img.src = "http://cs-server.usc.edu:45678/hw/hw8/images/Map.png";
+							      			panorama = new google.maps.StreetViewPanorama(
+										      	document.getElementById('main_map'), {
+										        position: place.geometry.location,
+										        pov: {
+										          heading: 34,
+										          pitch: 10
+										        },visible:true
+										      });
+										  //map.setStreetView(panorama);
+										  //$("#pano").css('display','block');
+										  //$("#pano").css('zIndex',0);
+
+							      		}
+							      		else{
+							      			peg_img.src = "http://cs-server.usc.edu:45678/hw/hw8/images/Pegman.png";
+							      			panorama.setVisible(false);
+							      			//$("#pano").css('zIndex',-1);
+							      		}	
+							      	});
+							                							
+							      	//reviews tab implementation
+
+							      	//setting up the reviews tab initial look
+							      	$("#yelpreviews").css('display','none');
+							      	$("#googlereviews").css('display','block');
+							      	$("#order").html("Default Order");
+							      	$("#yelp_google").html("Google Reviews");
+							      	$("#yelpreviews").html("");
+							      	$("#googlereviews").html("");
+
+							      	//toggle display between google and yelp reviews
+							      	$("#yelp_goog a").on('click',function(){
+							      		$("#yelp_google").html($(this).text());
+							      		console.log($(this).text());
+							      		if($(this).text() == "Yelp Reviews"){
+							      			$("#yelpreviews").css('display','block');
+							      			$("#googlereviews").css('display','none');
+							      			$("#order").html("Default Order");
+							      		}
+							      		else{
+							      			$("#googlereviews").css('display','block');
+							      			$("#yelpreviews").css('display','none');
+							      			$("#order").html("Default Order");
+							      		}
+							      	});
+
+							      							      	
+							      	//google reviews
+							      	var response = place.reviews;
+							      	if(response == undefined || response.length == 0){
+							      		var warning_div = document.createElement("div");
+							      		warning_div.id = "googlereviews_warning_div";
+										warning_div.style.marginTop = "35px";
+										var warning_text = "No records.";
+										var warning_text_node = document.createTextNode(warning_text);
+										warning_div.classList.add("alert");
+										warning_div.classList.add("alert-warning");
+										warning_div.setAttribute("role","alert");
+										warning_div.appendChild(warning_text_node);
+										var google_div = document.getElementById("googlereviews");
+										google_div.appendChild(warning_div);
+							      	}
+							      	else{
+
+							      		displayGreviews(response);
+							      	}
+							      	
+							      	
+							      	//yelp reviews
+							      	var name = place.name;
+							      	var city = "";
+							      	var state = "";
+							      	var country = "";
+							      	var postal_code = ""; 
+							      	var address1 = "";
+
+							      	for(add in place.address_components){
+							      		var obj = place.address_components[add];
+							      		if(obj.types.includes("postal_code")){
+							      			postal_code = obj.short_name;
+							      			
+							      		}
+							      		else if(obj.types.includes("country")){
+							      			country = obj.short_name;
+							      			
+							      		}
+							      		else if(obj.types.includes("administrative_area_level_1")){
+							      			state = obj.short_name;
+							      		}
+							      		else if(obj.types.includes("locality")){
+							      			city = obj.short_name;
+							      		}
+							      		else if(obj.types.includes("street_number")){
+							      			address1 += obj.short_name;
+							      		}
+							      		else if(obj.types.includes("route")){
+							      			address1 += ", "+ obj.short_name;
+							      		}
+							      	} 
+
+							      	var yelp_query = "http://bignode.us-east-2.elasticbeanstalk.com/yelpreviews?name="+name+"&address1="+address1+"&city="+city+"&state="+state+"&country="+country+"&postal_code="+postal_code;
+							      	console.log(yelp_query);
+							      	$.ajax({
+											url: yelp_query, 
+											method: "GET",
+											success: function(response){
+												if(response.message == "No records"){
+													//console.log("Handle no reviews from yelp");
+													response1 = "";
+													var warning_div = document.createElement("div");
+													warning_div.id = "yelpreviews_warning_div";
+													warning_div.style.marginTop = "35px";
+													var warning_text = "No records.";
+													var warning_text_node = document.createTextNode(warning_text);
+													warning_div.classList.add("alert");
+													warning_div.classList.add("alert-warning");
+													warning_div.setAttribute("role","alert");
+													warning_div.appendChild(warning_text_node);
+													var yelp_div = document.getElementById("yelpreviews");
+													yelp_div.appendChild(warning_div);
+												}
+												else{
+													response1 = JSON.parse(response);
+													displayYreviews(response1.reviews);
+												}
+												//console.log(JSON.parse(response).reviews[0]);
+												//displayTable(response);
+												//console.log("receiveing");
+											}
+
+										
+									}).fail(function (){
+										var error_div = document.createElement("div");
+										error_div.style.marginTop = "35px";
+										var error_text = "Failed to get search results.";
+										var error_text_node = document.createTextNode(error_text);
+										error_div.classList.add("alert");
+										error_div.classList.add("alert-danger");
+										error_div.setAttribute("role","alert");
+										error_div.appendChild(error_text_node);
+										//$("#pbar").css('display','none');
+										document.getElementById("yelpreviews").appendChild(error_div);
+									})
+									console.log(response1);
+
+									//toggle between the different orderings
+            						$("#order-dropdown a").on('click',function(){
+							      		$("#order").html($(this).text());
+
+							      		if($("#yelp_google").html() == "Yelp Reviews"){
+							      			
+							      			$("#yelpreviews").html("");
+
+							      			if($(this).text() == "Default Order"){
+							      				console.log("Yes");
+							      				var responsey = response1.reviews;
+							      				displayYreviews(responsey);
+							      			}
+							      			else if($(this).text() == "Highest Rating"){
+							      				var responsey = $.extend(true,[],response1.reviews);
+							      				responsey.sort(compareH);
+							      				displayYreviews(responsey);
+							      			}
+							      			else if($(this).text() == "Lowest Rating"){
+							      				var responsey = $.extend(true,[],response1.reviews);
+							      				responsey.sort(compareL);
+							      				displayYreviews(responsey);
+							      			}
+							      			else if($(this).text() == "Most Recent"){
+							      				var responsey = $.extend(true,[],response1.reviews);
+							      				responsey.sort(compareMY);
+							      				displayYreviews(responsey);
+							      			}
+							      			else if($(this).text() == "Least Recent"){
+							      				var responsey = $.extend(true,[],response1.reviews);
+							      				responsey.sort(compareLoY);
+							      				displayYreviews(responsey);
+							      			}
+							      		}
+							      		else{
+							      			
+							      			$("#googlereviews").html("");
+
+							      			if($(this).text() == "Default Order"){
+							      				//console.log("Yes");
+							      				//delete existing records
+							      				var responseg = place.reviews;
+							      				console.log("g ");
+							      				console.log(responseg[0]);
+							      				displayGreviews(responseg);
+							      			}
+							      			else if($(this).text() == "Highest Rating"){
+							      				//console.log("Yes");
+							      				var responseg = $.extend(true,[],place.reviews);
+							      				responseg.sort(compareH);
+							      				displayGreviews(responseg);
+							      			}
+							      			else if($(this).text() == "Lowest Rating"){
+							      				var responseg = $.extend(true,[],place.reviews);
+							      				responseg.sort(compareL);
+							      				displayGreviews(responseg);
+							      			}
+							      			else if($(this).text() == "Most Recent"){
+							      				var responseg = $.extend(true,[],place.reviews);
+							      				responseg.sort(compareM);
+							      				displayGreviews(responseg);
+							      			}
+							      			else if($(this).text() == "Least Recent"){
+							      				var responseg = $.extend(true,[],place.reviews);
+							      				responseg.sort(compareLo);
+							      				displayGreviews(responseg);
+							      			}
+							      		}
+							      	});
+
+            					}
+            					
+							//service.getDetails(request, callback);
+							});
+						});
+						//td4.innerHTML = "<input type='button'><i class='fa fa-star-o'></i></input>";
+
+						td0.appendChild(txt0_col);
+						td1.appendChild(img_col);
+						td2.appendChild(txt1_col);
+						td3.appendChild(txt2_col);
+						td4.appendChild(button_4_col);
+						td5.appendChild(button_5_col);
+						count_a = count_a + 1;
+						
+						tr.appendChild(td0);
+						tr.appendChild(td1);
+						tr.appendChild(td2);
+						tr.appendChild(td3);
+						tr.appendChild(td4);
+						tr.appendChild(td5);
+						tbody.appendChild(tr);
+						table.appendChild(tbody);
+				}
+				one_page_div.appendChild(table);
+			}
+			else{
+				console.log("No records found!");
+				var warning_div = document.createElement("div");
+				warning_div.style.marginTop = "35px";
+				var warning_text = "No records.";
+				var warning_text_node = document.createTextNode(warning_text);
+				warning_div.classList.add("alert");
+				warning_div.classList.add("alert-warning");
+				warning_div.setAttribute("role","alert");
+				warning_div.appendChild(warning_text_node);
+				var results_div = document.getElementById("results");
+				results_div.appendChild(warning_div);
+			}
+		}
+
+				next_btn_div = document.createElement("div");
+				next_btn_div.style.display = "flex";
+				next_btn_div.style.justifyContent = "center";
+
+				if(next = JSON.parse(response)['next_page_token']){
+					next_btn = document.createElement("button");
+					next_btn.innerHTML = "Next";
+					//next_btn.style.position = "absolute";
+					//next_btn.style.left = "50%";
+					//next_btn.classList.add("pull-right");
+					next_btn.classList.add("btn");
+					next_btn.classList.add("border");
+					next_btn.addEventListener("click",function (){
+						//make a request for new page
+						
+						value_of_cur += 1;
+						next_page = document.getElementById(value_of_cur);
+						
+						if(next_page == undefined){
+							$("#pbar").css("display","block");
+							$.ajax({
+								url: "http://bignode.us-east-2.elasticbeanstalk.com/search1?next="+next,
+								method: "GET",
+								success: function(response){
+									
+									//console.log(value_of_cur);
+									console.log("From next click "+ response);
+									$("#pbar").css("display","none");
+									displayTable(response);
+								//$('#pbar').css("display","none");
+								//console.log(response);
+								//displayTable(response);
+								//console.log("receiveing");
+								}
+											
+							}).fail(function (){
+								$("#pbar").css("display","none");
+								var error_div = document.createElement("div");
+								error_div.style.marginTop = "35px";
+								var error_text = "Failed to get search results.";
+								var error_text_node = document.createTextNode(error_text);
+								error_div.classList.add("alert");
+								error_div.classList.add("alert-danger");
+								error_div.setAttribute("role","alert");
+								error_div.appendChild(error_text_node);
+								//$("#pbar").css('display','none');
+								document.getElementById("results").appendChild(error_div);
+							})
+						}
+						else{
+							$("#"+value_of_cur).css("display","block");
+						}
+					
+						var val1 = (value_of_cur - 1) % 3;
+						var val2 = (value_of_cur + 1) % 3;
+
+						try{
+							$("#"+val1).css("display","none");
+							$("#"+val1).css("display","none");	
+						}
+						catch(error){
+							console.log(error);
+						}
+						//previous button should appear
+											
+						//prev_btn.style.position = "absolute";
+						//prev_btn.style.left = "50%";
+						//next_btn_div.removeChild(next_btn);
+						//next_btn_div.appendChild(prev_btn);
+						//console.log("Next clicked!" + " "+ table);
+						
+						
+					});
+					//don't append it here
+					//next_btn_div.appendChild(next_btn);
+					
+					
+				}
+				else{
+
+					next_btn = undefined;
+
+				}
+
+				prev_btn = document.createElement("button");
+				prev_btn.innerHTML = "Previous";
+				prev_btn.classList.add("btn");
+				prev_btn.classList.add("border");
+				prev_btn.addEventListener('click',function(){
+					
+					val_prev_1 = (value_of_cur) % 4;
+					val_prev_2 = (value_of_cur + 1) % 4;
+					value_of_cur -= 1; 
+					try{
+							$("#"+val_prev_1).css("display","none");
+							$("#"+val_prev_2).css("display","none");	
+						}
+						catch(error){
+							console.log(error);
+						}
+						$("#"+value_of_cur).css("display","block");
+				});
+
+				if(next_btn != undefined){
+					if(value_of_cur > 1){
+							space_div = document.createElement("div");
+							space_div.style.width = "20px";
+							next_btn_div.appendChild(prev_btn);
+							next_btn_div.appendChild(space_div);
+							next_btn_div.appendChild(next_btn);
+
+						}
+						else{
+							next_btn_div.appendChild(next_btn);
+						}
+				}
+				else{
+					if(value_of_cur > 1){
+						next_btn_div.appendChild(prev_btn);
+					}
+					
+
+				}
+				one_page_div.appendChild(next_btn_div);
+				table_display_div.appendChild(one_page_div);
+							
+					
+		}
+
+		function list_btn_click(){
+			$("#details").css("display","none");
+			$("#results").css("display","block");
+
+			//removing and resetting the info tab
+			/*var info = document.getElementById("info");
+			info.innerHTML = "";
+			
+			//removing photo elements
+			var photo_div0 = document.getElementById("div0");
+			var photo_div1 = document.getElementById("div1");
+			var photo_div2 = document.getElementById("div2");
+			var photo_div3 = document.getElementById("div3");
+			photo_div0.innerHTML = "";
+			photo_div1.innerHTML = "";
+			photo_div2.innerHTML = "";
+			photo_div3.innerHTML = "";
+
+			var photos_tab = document.getElementById("photos");
+			var warning_div = document.getElementById("photos_warning_div");
+			if(warning_div != undefined){
+				photos_tab.removeChild(warning_div);
+			}
+
+			//removing map panel
+			$("#panel").html("");
+
+			//removing prior reviews
+			var googlereviews_warning_div = document.getElementById("googlereviews_warning_div");
+			var yelpreviews_warning_div = document.getElementById("yelpreviews_warning_div");
+			var googlereviews = document.getElementById("googlereviews");
+			var yelpreviews = document.getElementById("yelpreviews");
+			if(googlereviews_warning_div != undefined){
+				googlereviews.removeChild(googlereviews_warning_div);
+			}
+
+			if(yelpreviews_warning_div != undefined){
+				yelpreviews.removeChild(yelpreviews_warning_div);
+			}
+
+			//resetting the info tab to open and active
+			$($("#clothing-nav li a.active").attr("href")).removeClass("active show");
+			$("#clothing-nav li a.active").removeClass("active");
+
+			$("#info-tab").addClass("active");
+			$($("#info-tab").attr("href")).addClass("active show");*/
+
+		}
+
+		function clear_page(form){
+			form.reset();
+			//$("#details").html("");
+			$("#results").html("");
+			//$("#favorites").html("");
+			value_of_cur = 1;
+			list_btn_click();
+			//$("#det_btn").css("display","none");
+
+			//var submit_btn = document.getElementById("search_btn");
+			//submit_btn.disabled = "disabled";
+		}
+
+	</script>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+	<script type="text/javascript" src="app.js"></script>
+	<script type="text/javascript" src="http://ip-api.com/json/?callback=get_geojson"></script>
+	<style type="text/css">
+		.form-group.required .control-label:after{
+			content: "*";
+			color:red;
+		}
+		.nav-center {  
+			text-align: center;
+  		}
+
+  		ul.nav{
+  			display: inline-block;
+  		}
+
+  		ul.nav li{
+  			display: inline;
+  		}
+
+  		ul.nav li a{
+  			float: left;
+  		}
+		
+	</style>
+</head>
+<body onload="onload_func_call()" ng-controller="PanelController as panel">
+	
+	<div class="container border rounded" style="margin-top:10px; background-color: #f7f7f8">
+		<h4 align="center">Travel and Entertainment Search</h4>
+		<div class="row">
+				<div class="col-lg-2"></div>
+				<div class="col-lg-8"> 
+				<form method="POST" action="" class="ajax" name="search_form">
+					<div class="form-group row required">
+						<label for="keyword" class="col-lg-3 control-label col-form-label-sm">Keyword</label>
+						<div class="col-lg-9">
+							<input type="text" id="keyword" name="keyword" ng-model="keyword" required class="form-control form-control-sm" ng-class="{'is-invalid': (search_form.keyword.$touched && search_form.keyword.$invalid)}">
+							<div class="invalid-feedback">Please enter a keyword.</div>
+						</div>
+					</div>
+					<div class="form-group row">
+						<label for="select_type" class="col-lg-3 col-form-label-sm">Category</label>
+					    <div class="col-lg-9">
+					    	<select class="form-control form-control-sm custom-select" name="category" id="select_type">
+						      <option value="default">Default</option>
+						      <option value="airport">Airport</option>
+						      <option value="amusement_park">Amusement Park</option>
+						      <option value="aquarium">Aquarium</option>
+						      <option value="art_gallery">Art Gallery</option>
+						      <option value="bakery">Bakery</option>
+						      <option value="bar">Bar</option>
+						      <option value="beauty_salon">Beauty Salon</option>
+						      <option value="bowling_alley">Bowling Alley</option>
+						      <option value="bus_station">Bus Station</option>
+						      <option value="cafe">Cafe</option>
+						      <option value="campground">Campground</option>
+						      <option value="car_wash">Car Rental</option>
+						      <option value="casino">Casino</option>
+						      <option value="lodging">Lodging</option>
+						      <option value="movie_theater">Movie Theater</option>
+						      <option value="museum">Museum</option>
+						      <option value="night_club">Night Club</option>
+						      <option value="park">Park</option>
+						      <option value="parking">Parking</option>
+						      <option value="restaurant">Restaurant</option>
+						      <option value="shopping_mall">Shopping Mall</option>
+						      <option value="stadium">Stadium</option>
+						      <option value="subway_station">Subway Station</option>
+						      <option value="taxi_stand">Taxi Stand</option>
+						      <option value="train_station">Train Station</option>
+						      <option value="travel_agency">Travel Agency</option>
+						      <option value="zoo">Zoo</option>
+						    </select>
+						</div>
+  					</div>
+  					<div class="form-group row">
+						<label for="distance" class="col-lg-3 col-form-label-sm">Distance (miles)</label>
+						<div class="col-lg-9">
+							<input type="number" id="distance" name="distance" placeholder="10" class="form-control form-control-sm" value="10">
+						</div>
+					</div>
+					<input type="hidden" name="lat_lng" value="">
+					<div class="form-group row required">
+						<label class="col-lg-3 control-label col-form-label-sm">From</label>
+						<div class="col-lg-9">
+							<div class="form-check">
+  								<input class="form-check-input" type="radio" name="loc" id="loc1" value="current" checked="checked" onclick="here_validation()">
+  								<label class="form-check-label col-form-label-sm" for="loc1">Current location</label>
+							</div>
+							<div class="form-check">
+  								<input class="form-check-input" type="radio" name="loc" id="loc2" value="other" onclick="var str_loc = document.getElementById('location'); str_loc.disabled=''; str_loc.required='required';">
+  								<label class="form-check-label col-form-label-sm" for="loc2">Other, Please specify:</label>
+  								<input type="text" name="location" id="location" required="" ng-model="location" disabled placeholder="Enter a location" class="form-control form-control-sm" ng-class="{'is-invalid': search_form.location.$touched && search_form.location.$invalid}">
+  								<div class="invalid-feedback">Please enter a location.</div>
+							</div>
+						</div>
+					</div>
+					<div class="form-group row">
+						<div class="col-lg-4">
+							<button type="submit" id="search_btn" name="search_btn" ng-disabled="((search_form.keyword.$touched && search_form.keyword.$invalid) || (search_form.location.$touched && search_form.location.$invalid) || (search_form.keyword.$untouched))" class="btn btn-primary" disabled="disabled"><i class="fa fa-search"></i> Search</button>
+							<input type="button" name="clear" value="Clear" onclick="clear_page(this.form)" class="btn border">
+						</div>
+					</div>
+				</form>
+				</div>
+				<div class="col-lg-2"></div>
+			</div>		
+		
+	</div>
+	<div class="container" style="margin-top:10px;">
+		<div class="nav-center">
+			<ul class="nav nav-pills">
+			    <li class="nav-item"><a href="#" class="nav-link" ng-class="{active:panel.tab == 1}" ng-click="panel.tab = 1">Results</a></li>
+			    <li class="nav-item"><a href="#" class="nav-link" ng-class="{active:panel.tab == 2}" ng-click="panel.tab = 2">Favorites</a></li>
+			</ul>
+		</div>
+	</div>
+	<div class="container" id="pbar" style="margin-top: 50px; display: none">
+		<div class="progress" style="width: 75%; margin-right: auto; margin-left: auto;">
+  			<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 50%">
+  			</div>
+		</div>
+	</div>
+	<div class="container">
+		<div id="results" ng-show="panel.tab == 1">
+		
+		</div>
+		<div id="favorites" ng-show="panel.tab == 2">
+			
+		</div>
+		<div id="details" style="margin-top: 25px; display: none">
+			<div id="map" style="display: none"></div>
+			<div id="details_btn">
+				<h5 style="text-align: center;font-weight: bold" id="details_title">Southern California</h5>
+				<button id="list_btn" class="btn pull-left border" onclick="list_btn_click()"><i class="fa fa-chevron-left"></i> List</button>
+				<div class="pull-right" style="margin-right: 3px">
+					<a id="twitter_a" href="https://twitter.com/intent/tweet?text=Hi&url=http://www.google.com&hashtags=TravelAndEntertainmentSearch">
+						<img height="35px" width="35px" src="http://cs-server.usc.edu:45678/hw/hw8/images/Twitter.png">
+							
+						</img>
+					</a>
+					<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+				</div>
+				<div style="width: 3px"></div>
+				<button id="fav_btn_details" class="btn border pull-right"><i class="fa fa-star-o"></i></button>
+				
+				<!--<button id="list_btn" class="btn"><i class="fa fa-chevron-left"></i> Left</button>-->
+			</div>
+			<div id="details_div" style="display: none; margin-top:45px;">
+				<ul id="clothing-nav" class="nav nav-tabs" role="tablist" style="margin-left:70%">
+					<li class="nav-item">
+						<a class="nav-link active" href="#info" id="info-tab" role="tab" data-toggle="tab" aria-controls="info" aria-expanded="true">Info</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#photos" role="tab" id="photos-tab" data-toggle="tab" aria-controls="hats">Photos</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#map1" role="tab" id="map-tab" data-toggle="tab" aria-controls="hats">Map</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#reviews" role="tab" id="reviews-tab" data-toggle="tab" aria-controls="hats">Reviews</a>
+					</li>
+				</ul>
+
+
+				<!-- Content Panel -->
+				<div id="clothing-nav-content" class="tab-content">
+
+
+					<div role="tabpanel" class="tab-pane fade show active" id="info" aria-labelledby="info-tab">
+								
+					</div>
+
+				<div role="tabpanel" class="tab-pane fade" id="photos" aria-labelledby="photos-tab">
+					<div id="photo_gallery" class="row">
+						<div id="div0" class="column">
+							
+						</div>
+						<div id="div1" class="column">
+							
+						</div>
+						<div id="div2" class="column">
+							
+						</div>
+						<div id="div3" class="column">
+							
+						</div>
+					</div>
+				</div>
+
+				<div role="tabpanel" class="tab-pane fade" id="map1" aria-labelledby="map-tab">
+					<div>
+						<form name="map_form">
+							<div class="form-row" >
+								<div class="form-group col-md-3">
+      								<label for="from">From</label>
+      								<input type="text" class="form-control form-control-sm" id="from" name="from" required ng-model="from">
+    							</div>
+    							<div class="form-group col-md-3">
+      								<label for="to">To</label>
+      								<input type="text" class="form-control form-control-sm" id="to" readonly>
+    							</div>
+    							<div class="form-group col-md-3">
+    								<label for="tm">Travel Mode</label>
+    								<select class="form-control form-control-sm custom-select" id="tm">
+  										<option value="DRIVING">DRIVING</option>
+  										<option value="BICYCLING">BICYCLING</option>
+  										<option value="TRANSIT">TRANSIT</option>
+  										<option value="WALKING">WALKING</option>
+									</select>
+    							</div>
+    							<div class="form-group col-md-2">
+    								<label>&nbsp;</label>
+    								<button id="get_directions" class=" form-control btn btn-primary btn-sm" ng-disabled="map_form.from.$touched && map_form.from.$invalid">Get Directions</button>
+
+    							</div>
+
+							</div>
+						</form>
+						<button id="peg" class="btn" style="padding: 0"><img id="peg_img" src="http://cs-server.usc.edu:45678/hw/hw8/images/Pegman.png" height="50px" width="50px"></button>	
+						<div id="main_map" style="height: 300px; margin-top:10px;">
+						</div>
+						<div id="panel">
+						</div>
+					</div>
+				</div>
+
+				<div role="tabpanel" class="tab-pane fade" id="reviews" aria-labelledby="reviews-tab">
+					<div class="row" style="margin-bottom: 10px;">
+					<div class="dropdown">
+						<button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="yelp_google" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						Google Reviews
+						</button>
+						<div id="yelp_goog" class="dropdown-menu" aria-labelledby="yelp_google">
+						<a class="dropdown-item" href="#googlereviews" id="dropdown-google">Google Reviews</a>
+						<a class="dropdown-item" href="#yelpreviews">Yelp Reviews</a>
+						</div>
+					</div>
+					<div style="width: 20px;"></div>
+					<div class="dropdown">
+							<button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="order" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							Default Order
+							</button>
+							<div id="order-dropdown" class="dropdown-menu" aria-labelledby="order">
+								<a class="dropdown-item" href="#reviews">Default Order</a>
+								<a class="dropdown-item" href="#reviews">Highest Rating</a>
+								<a class="dropdown-item" href="#reviews">Lowest Rating</a>
+								<a class="dropdown-item" href="#reviews">Most Recent</a>
+								<a class="dropdown-item" href="#reviews">Least Recent</a>
+							</div>
+					</div>
+				</div>
+				<div id="reviews">
+					<div id="yelpreviews" style="margin-top: 10px;">
+					
+					</div>
+					<div id="googlereviews" style="margin-top: 10px;">
+					
+					</div>
+				</div>
+				</div>
+	</div>
+	<script
+		src="https://code.jquery.com/jquery-3.3.1.min.js"
+		integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+		crossorigin="anonymous">
+	</script> 
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBgENc9jML_6mqoNcE3bNYm1RzNUet5EvQ&libraries=places&callback=add_autocomplete"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/rateYo/2.3.2/jquery.rateyo.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.0/moment.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.0/angular-animate.min.js"></script>
+	<script type="text/javascript">
+		$('form.ajax').on('submit',function(){
+				console.log("Triggered");
+				$('#pbar').css("display","block");
+				data = {
+					'keyword'   : $('input[name=keyword]').val(),
+					'category'  : $('#select_type').val(),
+					'distance'  : $('input[name=distance]').val(),
+					'loc'       : $('input[name=loc]:checked').val(),
+					'lat_lng'   : $('input[name=lat_lng]').val()
+				};
+
+				if($('input[name=location]').val() != ""){
+					data['location'] = $('input[name=location]').val();
+				}
+				else{
+					data['location'] = "";
+				}
+				
+				url = "http://bignode.us-east-2.elasticbeanstalk.com/search?keyword="+ data["keyword"]+"&category="+data["category"]+"&distance="+data["distance"]+"&loc="+data["loc"]+"&lat_lng="+data["lat_lng"]+"&location="+data["location"];
+				console.log(url);
+				$.ajax({
+					url: url,
+					method: "GET",
+					success: function(response){
+						$('#pbar').css("display","none");
+						console.log(response);
+						displayTable(response);
+						//console.log("receiveing");
+					}
+				}).fail(function(){
+					var error_div = document.createElement("div");
+					error_div.style.marginTop = "35px";
+					var error_text = "Failed to get search results.";
+					var error_text_node = document.createTextNode(error_text);
+					error_div.classList.add("alert");
+					error_div.classList.add("alert-danger");
+					error_div.setAttribute("role","alert");
+					error_div.appendChild(error_text_node);
+					$("#pbar").css('display','none');
+					document.getElementById("results").appendChild(error_div);
+				})
+				return false;
+		});
+	</script>
+</body>
+</html>

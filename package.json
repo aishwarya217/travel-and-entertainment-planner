@@ -1,0 +1,21 @@
+{
+  "name": "bignode",
+  "version": "1.0.0",
+  "description": "homework 8",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "author": "Aishwarya Kallimani",
+  "license": "ISC",
+  "dependencies": {
+    "angular": "^1.6.9",
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "express": "^4.16.3",
+    "path": "^0.12.7",
+    "querystring": "^0.2.0",
+    "request": "^2.85.0"
+  }
+}
